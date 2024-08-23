@@ -33,24 +33,24 @@ fn skip_time(state: &State) -> State {
         flush_time, using, flush_duration, ..
     } = &mut package;
 
-    let active_toilets: Vec<Urinal> = [Urinal::Left, Urinal::Middle, Urinal::Right]
+    let active_urinals: Vec<Urinal> = [Urinal::Left, Urinal::Middle, Urinal::Right]
         .into_iter()
-        .filter(|toilet| flush_time[*toilet as usize] > 0)
+        .filter(|urinal| flush_time[*urinal as usize] > 0)
         .collect();
 
-    let next_flush = active_toilets
+    let next_flush = active_urinals
         .iter()
-        .map(|toilet| flush_time[*toilet as usize])
+        .map(|urinal| flush_time[*urinal as usize])
         .min()
         .unwrap_or(0);
 
-    for toilet in active_toilets {
-        let time = &mut flush_time[toilet as usize];
+    for urinal in active_urinals {
+        let time = &mut flush_time[urinal as usize];
         *time -= next_flush;
 
-        if *time == 0 && using[toilet as usize] {
-            using[toilet as usize] = false;
-            flush_time[toilet as usize] = flush_duration[toilet as usize];
+        if *time == 0 && using[urinal as usize] {
+            using[urinal as usize] = false;
+            flush_time[urinal as usize] = flush_duration[urinal as usize];
         };
     }
 
@@ -60,12 +60,12 @@ fn skip_time(state: &State) -> State {
     }
 }
 
-fn use_toilet(state: &State, toilet: Urinal, duration: NSize) -> State {
+fn use_urinal(state: &State, urinal: Urinal, duration: NSize) -> State {
     let mut package = state.package.clone();
 
-    package.flush_time[toilet as usize] = duration;
-    package.using[toilet as usize] = true;
-    package.flush_duration[toilet as usize] = duration;
+    package.flush_time[urinal as usize] = duration;
+    package.using[urinal as usize] = true;
+    package.flush_duration[urinal as usize] = duration;
     package.duration_used[duration as usize] = true;
 
     State {
@@ -75,14 +75,14 @@ fn use_toilet(state: &State, toilet: Urinal, duration: NSize) -> State {
 }
 
 #[derive(Debug)]
-struct ToiletProblem {
+struct UrinalProblem {
     n: NSize,
     best_answer: AnsSize,
 }
 
-impl ToiletProblem {
-    fn new(n: NSize) -> ToiletProblem {
-        let mut problem = ToiletProblem {
+impl UrinalProblem {
+    fn new(n: NSize) -> UrinalProblem {
+        let mut problem = UrinalProblem {
             n,
             best_answer: (n as AnsSize) * (n as AnsSize + 1),
         };
@@ -137,9 +137,9 @@ impl ToiletProblem {
                 continue;
             }
 
-            for toilet in [Urinal::Left, Urinal::Right] {
-                if !using[Urinal::Middle as usize] && flush_time[toilet as usize] == 0 {
-                    self.bf(use_toilet(&cur, toilet, i));
+            for urinal in [Urinal::Left, Urinal::Right] {
+                if !using[Urinal::Middle as usize] && flush_time[urinal as usize] == 0 {
+                    self.bf(use_urinal(&cur, urinal, i));
                 }
             }
 
@@ -147,7 +147,7 @@ impl ToiletProblem {
                 && !using[Urinal::Right as usize]
                 && flush_time[Urinal::Middle as usize] == 0
             {
-                self.bf(use_toilet(&cur, Urinal::Middle, i));
+                self.bf(use_urinal(&cur, Urinal::Middle, i));
             }
         }
     }
@@ -155,7 +155,7 @@ impl ToiletProblem {
 
 fn main() {
     for n in 1..=10 {
-        let p = ToiletProblem::new(n);
+        let p = UrinalProblem::new(n);
         dbg!(p);
     }
 }
