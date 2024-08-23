@@ -27,50 +27,52 @@ impl Package {
     }
 }
 
-fn skip_time(state: &State) -> State {
-    let mut package = state.package.clone();
-    let Package {
-        flush_time, using, flush_duration, ..
-    } = &mut package;
-
-    let active_urinals: Vec<Urinal> = [Urinal::Left, Urinal::Middle, Urinal::Right]
-        .into_iter()
-        .filter(|urinal| flush_time[*urinal as usize] > 0)
-        .collect();
-
-    let next_flush = active_urinals
-        .iter()
-        .map(|urinal| flush_time[*urinal as usize])
-        .min()
-        .unwrap_or(0);
-
-    for urinal in active_urinals {
-        let time = &mut flush_time[urinal as usize];
-        *time -= next_flush;
-
-        if *time == 0 && using[urinal as usize] {
-            using[urinal as usize] = false;
-            flush_time[urinal as usize] = flush_duration[urinal as usize];
-        };
+impl State {
+    fn after_flush(&self) -> State {
+        let mut package = self.package.clone();
+        let Package {
+            flush_time, using, flush_duration, ..
+        } = &mut package;
+    
+        let active_urinals: Vec<Urinal> = [Urinal::Left, Urinal::Middle, Urinal::Right]
+            .into_iter()
+            .filter(|urinal| flush_time[*urinal as usize] > 0)
+            .collect();
+    
+        let next_flush = active_urinals
+            .iter()
+            .map(|urinal| flush_time[*urinal as usize])
+            .min()
+            .unwrap_or(0);
+    
+        for urinal in active_urinals {
+            let time = &mut flush_time[urinal as usize];
+            *time -= next_flush;
+    
+            if *time == 0 && using[urinal as usize] {
+                using[urinal as usize] = false;
+                flush_time[urinal as usize] = flush_duration[urinal as usize];
+            };
+        }
+    
+        State {
+            time: self.time + next_flush as AnsSize,
+            package,
+        }
     }
 
-    State {
-        time: state.time + next_flush as AnsSize,
-        package,
-    }
-}
-
-fn use_urinal(state: &State, urinal: Urinal, duration: NSize) -> State {
-    let mut package = state.package.clone();
-
-    package.flush_time[urinal as usize] = duration;
-    package.using[urinal as usize] = true;
-    package.flush_duration[urinal as usize] = duration;
-    package.duration_used[duration as usize] = true;
-
-    State {
-        time: state.time as AnsSize,
-        package,
+    fn use_urinal(&self, urinal: Urinal, duration: NSize) -> State {
+        let mut package = self.package.clone();
+    
+        package.flush_time[urinal as usize] = duration;
+        package.using[urinal as usize] = true;
+        package.flush_duration[urinal as usize] = duration;
+        package.duration_used[duration as usize] = true;
+    
+        State {
+            time: self.time as AnsSize,
+            package,
+        }
     }
 }
 
@@ -108,7 +110,7 @@ impl UrinalProblem {
     }
 
     fn bf(&mut self, cur: State) {
-        if cur.time > self.best_answer {
+        if cur.time >= self.best_answer {
             return;
         }
 
@@ -119,7 +121,7 @@ impl UrinalProblem {
 
         // Try skipping time.
         {
-            let new_state = skip_time(&cur);
+            let new_state = cur.after_flush();
             if new_state.time > cur.time {
                 self.bf(new_state)
             }
@@ -139,7 +141,7 @@ impl UrinalProblem {
 
             for urinal in [Urinal::Left, Urinal::Right] {
                 if !using[Urinal::Middle as usize] && flush_time[urinal as usize] == 0 {
-                    self.bf(use_urinal(&cur, urinal, i));
+                    self.bf(cur.use_urinal(urinal, i));
                 }
             }
 
@@ -147,7 +149,7 @@ impl UrinalProblem {
                 && !using[Urinal::Right as usize]
                 && flush_time[Urinal::Middle as usize] == 0
             {
-                self.bf(use_urinal(&cur, Urinal::Middle, i));
+                self.bf(cur.use_urinal(Urinal::Middle, i));
             }
         }
     }
