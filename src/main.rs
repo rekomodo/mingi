@@ -15,7 +15,7 @@ struct State {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum Toilet {
+enum Urinal {
     Left,
     Middle,
     Right,
@@ -33,7 +33,7 @@ fn skip_time(state: &State) -> State {
         flush_time, using, flush_duration, ..
     } = &mut package;
 
-    let active_toilets: Vec<Toilet> = [Toilet::Left, Toilet::Middle, Toilet::Right]
+    let active_toilets: Vec<Urinal> = [Urinal::Left, Urinal::Middle, Urinal::Right]
         .into_iter()
         .filter(|toilet| flush_time[*toilet as usize] > 0)
         .collect();
@@ -60,7 +60,7 @@ fn skip_time(state: &State) -> State {
     }
 }
 
-fn use_toilet(state: &State, toilet: Toilet, duration: NSize) -> State {
+fn use_toilet(state: &State, toilet: Urinal, duration: NSize) -> State {
     let mut package = state.package.clone();
 
     package.flush_time[toilet as usize] = duration;
@@ -137,17 +137,17 @@ impl ToiletProblem {
                 continue;
             }
 
-            for toilet in [Toilet::Left, Toilet::Right] {
-                if !using[Toilet::Middle as usize] && flush_time[toilet as usize] == 0 {
+            for toilet in [Urinal::Left, Urinal::Right] {
+                if !using[Urinal::Middle as usize] && flush_time[toilet as usize] == 0 {
                     self.bf(use_toilet(&cur, toilet, i));
                 }
             }
 
-            if !using[Toilet::Left as usize]
-                && !using[Toilet::Right as usize]
-                && flush_time[Toilet::Middle as usize] == 0
+            if !using[Urinal::Left as usize]
+                && !using[Urinal::Right as usize]
+                && flush_time[Urinal::Middle as usize] == 0
             {
-                self.bf(use_toilet(&cur, Toilet::Middle, i));
+                self.bf(use_toilet(&cur, Urinal::Middle, i));
             }
         }
     }
